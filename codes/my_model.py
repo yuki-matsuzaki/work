@@ -452,7 +452,7 @@ def main(fname):
 	np.alpha = []
 	
 	LL_prev = -sys.maxint - 1
-	MAX_iter = 1000
+	MAX_iter = 2
 	convergence = 1.0e-7
 
 	# EM_algorithm
@@ -485,19 +485,44 @@ def main(fname):
 
 	# outputs
 	fname = fname[0:-4]
-
+	header = [' ', 'blank', 'cart', 'cart_form', 'category', 'conversion', 'item', 'login', 'ranking', 'registration', 'resistration_form', 'review', 'sale', 'search', 'top']
 	fp_a = open("my_a_%s_s=%s.csv" % (fname, str(S)), "wb")
 	csv_writer = csv.writer(fp_a)
+	
+	i = 0
+	j = 1
 	for item in np.a:
-		csv_writer.writerows(item)
+		i = 0
+		header[0] = j
+		csv_writer.writerow(header)
+		for row in item:
+			row.insert(0, header[i+1])
+			csv_writer.writerow(row)
+			i += 1
+		csv_writer.writerow('\n')
+		j += 1
 
 	fp_pi = open("my_pi_%s_s=%s.csv" % (fname, str(S)), "wb")
 	csv_writer = csv.writer(fp_pi)
+	header = []
+	for s in range(S):
+		header.append(s)
+	header.insert(0, 'latent segment')
+	csv_writer.writerow(header)
+	np.pi.insert(0, 'prob.')
 	csv_writer.writerow(np.pi)
 
 	fp_lambda = open("my_lambda_%s_s=%s.csv" % (fname, str(S)), "wb")
 	csv_writer = csv.writer(fp_lambda)
-	csv_writer.writerows(np.Lambda)
+	csv_writer.writerow(header)
+	
+	header = [' ', 'blank', 'cart', 'cart_form', 'category', 'conversion', 'item', 'login', 'ranking', 'registration', 'resistration_form', 'review', 'sale', 'search', 'top']
+	
+	i = 1
+	for row in np.Lambda:
+		row.insert(0, header[i])
+		csv_writer.writerow(row)
+		i += 1
 
 	fp_c = open("my_c_%s_s=%s.csv" % (fname, str(S)), "wb")
 	csv_writer = csv.writer(fp_c)
