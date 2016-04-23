@@ -33,8 +33,10 @@ def load_data(fname):
 	usid_list = []
 	page_type_list = []
 	is_cv_list = []
+	is_ctr_list = []
 	dwell_list = []
-
+	sum_ctr = 0
+	sum_trt = 0
 	# データを流す
 	#
 	#流すデータはusidでソートされたもの
@@ -56,6 +58,13 @@ def load_data(fname):
 		else:
 			is_cv_list.append(int(0))
 
+		if row[10] == "False":
+			is_ctr_list.append(int(0))
+			sum_trt += 1
+		else:
+			is_ctr_list.append(int(1))
+			sum_ctr += 1
+
 		dwell_list.append(int(row[3]))
 
 		# is_ctr_list.append(row[10])
@@ -64,9 +73,13 @@ def load_data(fname):
 	page_type_list.append("EOF")
 	is_cv_list.append("EOF")
 
+	print "sum_trt", sum_trt
+	print "sum_ctr", sum_ctr
+
 	new_usid_list = []
 	new_page_type_list = []
 	new_is_cv_list = []
+	new_is_ctr_list = []
 	new_dwell_list = []
 
 	# delete pv = 1
@@ -75,6 +88,7 @@ def load_data(fname):
 		new_usid_list.append(usid_list[i])
 		new_page_type_list.append(page_type_list[i])
 		new_is_cv_list.append(is_cv_list[i])
+		new_is_ctr_list.append(is_ctr_list[i])
 		new_dwell_list.append(dwell_list[i])
 		pv += 1
 
@@ -85,6 +99,7 @@ def load_data(fname):
 				del new_usid_list[-1]
 				del new_page_type_list[-1]
 				del new_is_cv_list[-1]
+				del new_is_ctr_list[-1]
 				del new_dwell_list[-1]
 				pv = 0
 
@@ -92,6 +107,7 @@ def load_data(fname):
 	us_hcount = {}
 	us_cv = {}
 	us_dwell = {}
+	us_ctr = {}
 	usid_num_dict = {}
 	usid_dict = {}
 	
@@ -115,6 +131,11 @@ def load_data(fname):
 			else : 
 				us_cv[user] = 0
 
+			if new_is_ctr_list[row_num] == 1:
+				us_ctr[user] = 1
+			else :
+				us_ctr[user] = 0
+
 		us_hcount[user] += 1
 		us_dwell[user] += dwell_list[row_num]
 		row_num += 1
@@ -125,6 +146,7 @@ def load_data(fname):
 	out.append(usid_num_dict)
 	out.append(usid_dict)
 	out.append(us_cv)
+	out.append(us_ctr)
 	out.append(us_dwell)
 	out.append(us_hcount)
 	return out
@@ -357,8 +379,9 @@ def log_likelyhood(pi, Lambda, a, c, initial_matrix, N, W, I):
 
 	return LL
 
-def featurize_segments(us_cv, us_dwell, us_hcount, alpha, usid_dict, I):
+def featurize_segments(us_cv, us_ctr, us_dwell, us_hcount, alpha, usid_dict, I):
 	np.cv_feature = [0.0 for s in range(S)]
+	np.ctr_feature = [0.0 for s in range(S)]
 	np.dwell_feature = [0.0 for s in range(S)]
 	np.hcount_feature = [0.0 for s in range(S)]
 	np.volume = [0.0 for s in range(S)]
@@ -366,12 +389,14 @@ def featurize_segments(us_cv, us_dwell, us_hcount, alpha, usid_dict, I):
 	for s in range(S):
 		for i in range(I):
 			np.cv_feature[s] += us_cv[usid_dict[i]]*alpha[i][s]
+			np.ctr_feature[s] += us_ctr[usid_dict[i]]*alpha[i][s]
 			np.dwell_feature[s] += us_dwell[usid_dict[i]]*alpha[i][s]
 			np.hcount_feature[s] += us_hcount[usid_dict[i]]*alpha[i][s]
 			np.volume[s] += alpha[i][s]
 
 	out = []
 	out.append(np.cv_feature)
+	out.append(np.ctr_feature)
 	out.append(np.dwell_feature)
 	out.append(np.hcount_feature)
 	out.append(np.volume)
@@ -388,12 +413,13 @@ def main(fname):
 	usid_num_dict = {}
 	usid_dict = {}
 	us_cv = {}
+	us_ctr = {}
 	us_dwell = {}
 	us_hcount = {}
 
 	print "loading data..."
 	
-	(usid_list, page_type_list, is_cv_list, usid_num_dict, usid_dict, us_cv, us_dwell, us_hcount) = load_data(fname)
+	(usid_list, page_type_list, is_cv_list, usid_num_dict, usid_dict, us_cv, us_ctr, us_dwell, us_hcount) = load_data(fname)
 	# print us_cv['560bfb948c6b51327a582385']
 	# number of usid
 	I = len(usid_num_dict)
@@ -427,7 +453,7 @@ def main(fname):
 	
 	LL_prev = -sys.maxint - 1
 	MAX_iter = 1000
-	convergence = 1.0e-10
+	convergence = 1.0e-7
 
 	# EM_algorithm
 	for i in range(MAX_iter):
@@ -449,11 +475,12 @@ def main(fname):
 
 
 	np.cv_feature = []
+	np.ctr_feature = []
 	np.dwell_feature = []
 	np.hcount_feature = []
 	np.volume = []
 
-	(np.cv_feature, np.dwell_feature, np.hcount_feature, np.volume) = featurize_segments(us_cv, us_dwell, us_hcount, np.alpha, usid_dict, I)
+	(np.cv_feature, np.ctr_feature, np.dwell_feature, np.hcount_feature, np.volume) = featurize_segments(us_cv, us_ctr, us_dwell, us_hcount, np.alpha, usid_dict, I)
 
 
 	# outputs
@@ -476,7 +503,6 @@ def main(fname):
 	csv_writer = csv.writer(fp_c)
 	csv_writer.writerow(np.c)
 
-
 	fp_alpha = open("my_alpha_%s_s=%s.csv" % (fname, str(S)), "wb")
 	csv_writer = csv.writer(fp_alpha)
 	csv_writer.writerows(np.alpha)
@@ -484,6 +510,7 @@ def main(fname):
 	# add header
 	np.volume.insert(0, "volume")
 	np.cv_feature.insert(0, "cv")
+	np.ctr_feature.insert(0, "ctr")
 	np.dwell_feature.insert(0, "dwell")
 	np.hcount_feature.insert(0, "hcount")
 	
@@ -491,10 +518,10 @@ def main(fname):
 	csv_writer = csv.writer(fp_features)
 	csv_writer.writerow(np.volume)
 	csv_writer.writerow(np.cv_feature)
+	csv_writer.writerow(np.ctr_feature)
 	csv_writer.writerow(np.dwell_feature)
 	csv_writer.writerow(np.hcount_feature)
 	
-
 
 	print "done!"
 
