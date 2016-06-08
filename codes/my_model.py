@@ -423,6 +423,23 @@ def main(fname):
 	# print us_cv['560bfb948c6b51327a582385']
 	# number of usid
 	I = len(usid_num_dict)
+
+	# for pickling
+	with open("usid_num_dict_%s_s=%s.dump" % (fname, str(S)), "w") as usid_num_dict_dump:
+		pickle.dump(usid_num_dict, usid_num_dict_dump)
+
+	with open("usid_dict_%s_s=%s.dump" % (fname, str(S)), "w") as usid_dict_dump:
+		pickle.dump(usid_dict, usid_dict_dump)
+
+	with open("us_cv_%s_s=%s.dump" % (fname, str(S)), "w") as us_cv_dump:
+		pickle.dump(us_cv, us_cv_dump)
+
+	with open("us_hcount_%s_s=%s.dump" % (fname, str(S)), "w") as us_hcount_dump:
+		pickle.dump(us_hcount, us_hcount_dump)
+
+	with open("us_dwell_%s_s=%s.dump" % (fname, str(S)), "w") as us_dwell_dump:
+		pickle.dump(us_dwell, us_dwell_dump)
+
 	
 	print "making learning data..."
 	np.initial_matrix = []
@@ -482,9 +499,27 @@ def main(fname):
 
 	(np.cv_feature, np.ctr_feature, np.dwell_feature, np.hcount_feature, np.volume) = featurize_segments(us_cv, us_ctr, us_dwell, us_hcount, np.alpha, usid_dict, I)
 
+	
+	fname = fname[0:-4]
+	# for pickling
+	with open("my_pi_%s_s=%s.dump" % (fname, str(S)), "w") as pi_dump:
+		pickle.dump(np.pi, pi_dump)
+
+	with open("my_a_%s_s=%s.dump" % (fname, str(S)), "w") as a_dump:
+		pickle.dump(np.a, a_dump)
+
+	with open("my_lambda_%s_s=%s.dump" % (fname, str(S)), "w") as lambda_dump:
+		pickle.dump(np.Lambda, lambda_dump)
+
+	with open("my_c_%s_s=%s.dump" % (fname, str(S)), "w") as c_dump:
+		pickle.dump(np.c, c_dump)
+
+	with open("my_alpha_%s_s=%s.dump" % (fname, str(S)), "w") as alpha_dump:
+		pickle.dump(np.aplpha, alpha_dump)
+
 
 	# outputs
-	fname = fname[0:-4]
+	
 	header = [' ', 'blank', 'cart', 'cart_form', 'category', 'conversion', 'item', 'login', 'ranking', 'registration', 'resistration_form', 'review', 'sale', 'search', 'top']
 	fp_a = open("my_a_%s_s=%s.csv" % (fname, str(S)), "wb")
 	csv_writer = csv.writer(fp_a)
